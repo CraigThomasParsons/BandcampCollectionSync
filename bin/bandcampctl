@@ -1,0 +1,183 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import sys
+from datetime import datetime
+from pathlib import Path
+
+from bandcampctl_lib.actions import append_ctl_log, ensure_exec_permissions, run_reconcile, run_scaffold, run_worker_once
+from bandcampctl_lib.config import get_paths
+from bandcampctl_lib.diagnostics import collect_warnings
+from bandcampctl_lib.fs import list_jobs
+from bandcampctl_lib.logs import read_entries
+from bandcampctl_lib.systemd import list_timers, status_unit
+from bandcampctl_lib.tui import run_tui
+
+
+def _print_status() -> int:
+    paths = get_paths()
+    now = datetime.now().isoformat()
+
+    pending = len(list_jobs(paths.pending, "pending"))
+    in_progress = len(list_jobs(paths.in_progress, "in_progress"))
+    failed = len(list_jobs(paths.failed, "failed"))
+    done = len(list_jobs(paths.done, "done"))
+
+    timer = list_timers("bandcamp-sync-reconcile.timer")
+    worker = status_unit("bandcamp-sync-worker.path")
+
+    # Check for fan_id config
+    fan_id_file = Path.home() / "BandcampSync/config/fan_id.txt"
+    fan_id_status = "ok" if fan_id_file.exists() and fan_id_file.read_text().strip().isdigit() else "missing"
+
+    entries = read_entries(paths.worker_log, limit=400)
+    last_done = next((e for e in reversed(entries) if e.action == "job_transition" and "done" in e.detail), None)
+    last_done_line = last_done.raw if last_done else ""
+
+    warnings = collect_warnings(paths)
+
+    print(f"timestamp={now}")
+    print(f"pending={pending}")
+    print(f"in_progress={in_progress}")
+    print(f"failed={failed}")
+    print(f"done={done}")
+    print(f"reconcile_timer={'ok' if timer.ok else 'missing'}")
+    print(f"worker_path={'ok' if worker.ok else 'missing'}")
+    print(f"fan_id={fan_id_status}")
+    if fan_id_status != "ok":
+         warnings.append(type("Warning", (), {"code": "CONFIG_MISSING", "message": "Run bin/capture_fan_id.py to set up fan_id"})())
+    print(f"last_success={last_done_line}")
+    print(f"warnings={len(warnings)}")
+    for idx, warning in enumerate(warnings, start=1):
+        print(f"warning.{idx}={warning.code}:{warning.message}")
+    return 0
+
+
+def _print_explain() -> int:
+    text = """
+BandcampSync — Architecture Explanation
+---------------------------------------
+
+Source of truth:
+  - capture_collection.py / extract_owned.py -> bandcamp-owned.txt
+
+Reconciliation (hourly):
+  systemd timer -> Sync/bin/reconcile.sh -> Sync/bin/enqueue_owned.sh
+
+Queue semantics:
+  - Sync/inbox/pending/*.job (1 file = 1 album)
+  - worker moves pending -> in_progress -> done/failed
+  - queues are filesystem-backed and inspectable
+
+Execution:
+  systemd path watcher -> Sync/bin/worker.sh -> Sync/bin/download_one.sh
+
+Failure handling:
+  - failed jobs live in Sync/inbox/failed
+  - retry by moving failed -> pending (manual, explicit)
+
+Helpers (bandcampctl) only observe or trigger.
+They do not replace stages or add hidden state.
+
+Bandcamp Identity
+-----------------
+fan_id is discovered once via bin/capture_fan_id.py and cached.
+This avoids UI scraping in the pipeline and keeps stages deterministic.
+It is stored in ~/BandcampSync/config/fan_id.txt
+""".strip()
+    print(text)
+    return 0
+
+
+def _run_logs(args: argparse.Namespace) -> int:
+    from bandcampctl_lib.logs import follow, tail_lines
+
+    paths = get_paths()
+    log_path = {
+        "worker": paths.worker_log,
+        "reconcile": paths.reconcile_log,
+        "enqueue": paths.enqueue_log,
+        "ctl": paths.ctl_log,
+    }[args.name]
+
+    if args.follow:
+        for line in follow(log_path):
+            print(line)
+    else:
+        for line in tail_lines(log_path, limit=args.lines):
+            print(line)
+    return 0
+
+
+def _run_action(args: argparse.Namespace) -> int:
+    paths = get_paths()
+    if args.action == "reconcile":
+        append_ctl_log(paths, "ctl_reconcile", "-", "manual reconcile triggered")
+        result = run_reconcile(paths)
+        sys.stdout.write(result.stdout + ("\n" if result.stdout else ""))
+        if result.stderr:
+            sys.stderr.write(result.stderr + "\n")
+        return result.returncode
+    if args.action == "worker":
+        append_ctl_log(paths, "ctl_worker", "-", "manual worker triggered")
+        result = run_worker_once(paths)
+        sys.stdout.write(result.stdout + ("\n" if result.stdout else ""))
+        if result.stderr:
+            sys.stderr.write(result.stderr + "\n")
+        return result.returncode
+    if args.action == "scaffold":
+        append_ctl_log(paths, "ctl_scaffold", "-", "manual scaffold triggered")
+        result = run_scaffold(paths)
+        updated = ensure_exec_permissions(paths)
+        if updated:
+            print("chmod +x applied:")
+            for path in updated:
+                print(str(path))
+        sys.stdout.write(result.stdout + ("\n" if result.stdout else ""))
+        if result.stderr:
+            sys.stderr.write(result.stderr + "\n")
+        return result.returncode
+    return 1
+
+
+def main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="bandcampctl")
+    sub = parser.add_subparsers(dest="command")
+
+    sub.add_parser("status", help="Show system + queue state (scriptable)")
+    sub.add_parser("explain", help="Explain architecture and data flow")
+    sub.add_parser("tui", help="Interactive control panel")
+    sub.add_parser("dashboard", help="Read-only TUI dashboard")
+
+    logs = sub.add_parser("logs", help="Tail or follow logs")
+    logs.add_argument("name", choices=["worker", "reconcile", "enqueue", "ctl"])
+    logs.add_argument("--follow", action="store_true")
+    logs.add_argument("--lines", type=int, default=50)
+
+    action = sub.add_parser("run", help="Run a stage action once")
+    action.add_argument("action", choices=["reconcile", "worker", "scaffold"])
+
+    args = parser.parse_args(argv)
+
+    if args.command == "status":
+        return _print_status()
+    if args.command == "explain":
+        return _print_explain()
+    if args.command == "tui":
+        run_tui(dashboard_only=False)
+        return 0
+    if args.command == "dashboard":
+        run_tui(dashboard_only=True)
+        return 0
+    if args.command == "logs":
+        return _run_logs(args)
+    if args.command == "run":
+        return _run_action(args)
+
+    parser.print_help()
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

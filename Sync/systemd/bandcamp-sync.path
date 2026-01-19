@@ -1,0 +1,8 @@
+[Unit]
+Description=Bandcamp Sync Queue Watcher
+
+[Path]
+PathExistsGlob=%h/BandcampSync/inbox/pending/*.job
+
+[Install]
+WantedBy=default.target

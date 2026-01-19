@@ -1,3 +1,31 @@
+# System
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# BandcampSync Data
+Sync/inbox/
+Sync/logs/
+BandcampSync/collection.json
+bandcamp-owned.txt
+debug.html
+Retry/retry.log
+
+# Configuration & Secrets
+config/
+.config/
+cookies.txt
+
+# Editor
+.vscode/
+.idea/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

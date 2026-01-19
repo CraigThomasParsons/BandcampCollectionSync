@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BandcampSync Dashboard</title>
+    <link rel="stylesheet" href="lcars.css">
+</head>
+
+<body>
+
+    <!-- LCARS HEADER -->
+    <div class="lcars-header">
+        <div class="lcars-elbow"></div>
+        <div class="lcars-bar">
+            <span class="lcars-title">BANDCAMP SYNC — DASHBOARD MODE</span>
+            <span class="lcars-status" id="header-status">STATUS: INITIALIZING</span>
+        </div>
+        <div class="lcars-cap"></div>
+    </div>
+
+    <div class="lcars-main-container">
+
+        <!-- SIDEBAR -->
+        <div class="lcars-sidebar">
+            <div class="lcars-column-fill"></div>
+            <div class="lcars-button" onclick="setView('dashboard')">DASHBOARD</div>
+            <div class="lcars-button" onclick="setView('collections')">COLLECTIONS</div>
+            <div class="lcars-button" onclick="setView('logs')">LOGS</div>
+            <!-- <div class="lcars-button alert" onclick="triggerReconcile()">RECONCILE</div> -->
+            <div class="lcars-column-bottom"></div>
+        </div>
+
+        <!-- CONTENT AREA -->
+        <div class="lcars-content">
+
+            <!-- DASHBOARD VIEW -->
+            <div id="view-dashboard" class="view-panel active">
+
+                <div class="panel-row">
+                    <!-- QUEUE STATUS -->
+                    <div class="lcars-panel orange-panel">
+                        <div class="panel-header">QUEUE STATUS</div>
+                        <div class="panel-body" id="queue-stats">
+                            <div class="stat-row">Pending: <span id="count-pending">--</span></div>
+                            <div class="stat-row">In Progress: <span id="count-in-progress">--</span></div>
+                            <div class="stat-row">Failed: <span id="count-failed">--</span></div>
+                            <div class="stat-row">Done: <span id="count-done">--</span></div>
+                        </div>
+                    </div>
+
+                    <!-- CURRENT JOB -->
+                    <div class="lcars-panel blue-panel flex-grow">
+                        <div class="panel-header">CURRENT JOB</div>
+                        <div class="panel-body" id="current-job-panel">
+                            <div id="job-details">
+                                <p>No active job detected.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SYSTEMD -->
+                    <div class="lcars-panel purple-panel">
+                        <div class="panel-header">SYSTEMD</div>
+                        <div class="panel-body" id="systemd-stats">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RECENT LOGS TAIL -->
+                <div class="lcars-panel gray-panel full-width spacer-10">
+                    <div class="panel-header">RECENT ACTIVITY</div>
+                    <div class="panel-body log-console" id="mini-logs">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- COLLECTION ITEMS (DASHBOARD SUMMARY) -->
+                <div class="lcars-panel blue-panel full-width spacer-10">
+                    <div class="panel-header">COLLECTION ITEMS</div>
+                    <div class="panel-body">
+                        <div id="collection-warning-dashboard"
+                            style="display:none; color:red; margin-bottom:10px; font-weight:bold;">
+                            WARNING: collection.json MISSING. Run `capture_collection_api.py`.
+                        </div>
+                        <table class="lcars-table">
+                            <thead>
+                                <tr>
+                                    <th>STATUS</th>
+                                    <th>ARTIST</th>
+                                    <th>TITLE</th>
+                                </tr>
+                            </thead>
+                            <tbody id="collection-list-body-dashboard">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- COLLECTIONS VIEW -->
+            <div id="view-collections" class="view-panel">
+                <div class="lcars-panel blue-panel full-height">
+                    <div class="panel-header">COLLECTION ITEMS</div>
+                    <div class="panel-body" id="collection-target">
+                        <div id="collection-warning"
+                            style="display:none; color:red; margin-bottom:10px; font-weight:bold;">
+                            WARNING: collection.json MISSING. Run `capture_collection_api.py`.
+                        </div>
+                        <table class="lcars-table">
+                            <thead>
+                                <tr>
+                                    <th>STATUS</th>
+                                    <th>ARTIST</th>
+                                    <th>TITLE</th>
+                                </tr>
+                            </thead>
+                            <tbody id="collection-list-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LOGS VIEW -->
+            <div id="view-logs" class="view-panel">
+                <div class="lcars-panel gray-panel full-height">
+                    <div class="panel-header">FULL LOGS</div>
+                    <div class="panel-body log-console" id="full-logs">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

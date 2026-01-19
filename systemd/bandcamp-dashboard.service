@@ -1,0 +1,14 @@
+[Unit]
+Description=BandcampSync Web Dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/BandcampSync
+ExecStart=%h/BandcampSync/venv/bin/python Web/server/app.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

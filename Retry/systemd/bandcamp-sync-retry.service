@@ -1,0 +1,7 @@
+[Unit]
+Description=Bandcamp Sync Retry Service
+ConditionPathExists=%h/BandcampSync/Retry/bin/retry.sh
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash %h/BandcampSync/Retry/bin/retry.sh

@@ -1,0 +1,6 @@
+[Unit]
+Description=Bandcamp Sync Worker
+
+[Service]
+Type=oneshot
+ExecStart=%h/BandcampSync/bin/worker.sh
