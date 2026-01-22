@@ -1,4 +1,4 @@
-# BxandcampSync
+# BandcampSync
 
 BandcampSync is a file-backed, stage-driven pipeline for syncing Bandcamp albums.
 Helpers live in `bin/` and only observe/trigger stages.
@@ -102,11 +102,6 @@ If the scraper stops early:
 
 ## Features
 
-<!--
-Source - https://stackoverflow.com/a
-Posted by Philipp Schwarz, modified by community. See post 'Timeline' for change history
-Retrieved 2026-01-22, License - CC BY-SA 4.0
--->
 The dashboard will be available at [http://localhost:5000](http://localhost:5000).
 
 ### The LCARS-style dashboard provides a high-contrast overview of system status.
