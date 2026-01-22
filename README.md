@@ -88,3 +88,27 @@ If the scraper stops early:
 - Check `debug.html` to see what the scraper saw.
 - Ensure your internet connection is stable.
 - Run manually with `venv/bin/python capture_collection_api.py` to watch stdout.
+
+## Features
+
+<!--
+Source - https://stackoverflow.com/a
+Posted by Philipp Schwarz, modified by community. See post 'Timeline' for change history
+Retrieved 2026-01-22, License - CC BY-SA 4.0
+-->
+The dashboard will be available at [http://localhost:5000](http://localhost:5000).
+
+### The LCARS-style dashboard provides a high-contrast overview of system status.
+![alt text](Assets/LCARS-BandCampSync.png "Dasboard")
+
+### The collections view shows all albums in your Bandcamp collection, with sync status indicators.
+![alt text](Assets/BandCamp_Collections.png "Collections")
+
+### The logs view shows real-time logs from the sync worker.
+![alt text](Assets/BandCamp_Logs.png "Logs")
+
+## API Endpoints
+
+- `GET /api/status`: Systemd unit states.
+- `GET /api/queue`: Counts of jobs in inbox directories.
+- `GET /api/logs`: Tailed content of log files.
